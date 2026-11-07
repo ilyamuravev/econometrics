@@ -1,0 +1,17 @@
+property,value
+standardversion,http://opendata.gosmonitor.ru/standard/3.0
+identifier,ANO CPUR/АНО ЦПУР
+title,Населенные пункты России: численность населения и географические координаты
+description,"Набор данных содержит сведения о населенных пунктах России, их типе и населении, в том числе количестве детей, географических координатах, а также кодах по ОКТМО."
+creator,АНО ЦПУР - Центр перспективных управленческих решений
+created,20210302
+modified,20210302
+subject,
+format,CSV
+provenance,
+valid,
+publishername,
+publisherphone,
+publishermbox,a.shiyan@cpur.ru
+data,
+structure,

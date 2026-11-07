@@ -1,0 +1,15 @@
+field name,english description,russian description,measure,okei_code,format
+id,Observation identifier,id наблюдения в рамках набора данных,,,numeric
+region,Region name,Наименование субъекта Российской Федерации,,,string
+municipality,Municipality name,Наименование муниципального образования,,,string
+settlement,Settlement name,Наименование населенного пункта,,,string
+type,Settlement type,"Тип населенного пункта (город, село, деревня, кожуун, станица и др.)",,,string
+population,"Population, all","Население населенного пунктах, всего",человек,792,numeric
+children,"Population, under 18",Количество детей в возрасте до 18 лет в населенном пункте ,человек,792,numeric
+latitude_dms,Settlement lattitude in DMS format,Широта населенного пункта в формате DMS,,,string
+longitude_dms,Settlement longitude in DMS format,Долгота населенного пункта в формате DMS,,,string
+latitude_dd,Settlement lattitude in DD format,Широта населенного пункта в формате DD,,,numeric
+longitude_dd,Settlement longitude in DD format,Долгота населенного пункта в формате DD,,,numeric
+oktmo,OKTMO code ,Значение кода ОКТМО для населенного пункта,,,string
+dadata,Source of the OKTMO code: dadata.ru,"Отметка о том, что код ОКТМО был получен с помощью сервиса стандартизации адресов dadata.ru",,,boolean
+rosstat,Source of the OKTMO code: The Russian Federal State Statistics Service (Rosstat),"Отметка о том, что код ОКТМО был получен на основе классификатора ОКТМО, размещенного на официальном сайте Росстата",,,boolean
