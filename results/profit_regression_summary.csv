@@ -1,0 +1,17 @@
+"model","n","clusters","r_squared"
+"krasnodar",832,143,0.00104564128330746
+"controls",832,143,0.0047863315143279
+"interactions",832,143,0.00643144106097563
+"nearest",832,143,0.00279451153640258
+"trimmed",814,143,0.00729738550218418
+"population_groups",832,143,0.00674825595963088
+"population_groups_trimmed",814,143,0.0108254651104042
+"krasnodar_all_interactions",832,143,0.00643144106097563
+"krasnodar_trimmed_interactions",814,143,0.0100761868479724
+"sochi_all_interactions",832,143,0.0124697683018327
+"sochi_trimmed_interactions",814,143,0.0101431557898091
+"novorossiysk_all_interactions",832,143,0.00227882021826277
+"novorossiysk_trimmed_interactions",814,143,0.00963336410562087
+"nearest_all_interactions",832,143,0.00346229351189694
+"nearest_trimmed_interactions",814,143,0.0126265333909383
+"sochi_without_max",831,143,0.00403787428751199
