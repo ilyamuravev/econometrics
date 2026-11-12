@@ -10,7 +10,7 @@
 # Пакеты (один раз):
 # options(timeout = 600)
 # install.packages(c("duckdb", "DBI", "dplyr", "ggplot2", "corrplot", "leaflet",
-#                    "htmlwidgets", "cluster", "tidyr", "gridExtra", "viridisLite"), type = "binary")
+#                    "htmlwidgets", "cluster", "gridExtra", "viridisLite", "sf", "ggspatial"), type = "binary")
 
 library(DBI)
 library(duckdb)
@@ -90,14 +90,34 @@ cat("\nСамые низкие значения:\n")
 print(d |> arrange(rev_per_emp) |> select(tin, settlement, employees, revenue, rev_per_emp) |> head(8))
 write.csv(d |> filter(anomaly), "anomalies_me.csv", row.names = FALSE, fileEncoding = "UTF-8")
 
-long <- d |>
-  transmute(sector, `Доход на работника, руб` = rev_per_emp, `Сотрудники` = employees,
-            `Размер пункта (число фирм)` = n_firms_settl) |>
-  tidyr::pivot_longer(-sector, names_to = "var", values_to = "value")
-p1 <- ggplot(long, aes(sector, value)) + geom_boxplot(outlier.size = .6) + scale_y_log10() +
-  facet_wrap(~var, scales = "free_y") + labs(x = NULL, y = NULL, title = "Распределения и выбросы (лог-шкала)") +
-  theme_minimal(base_size = 11)
-ggsave("01_outliers_me.png", p1, width = 12, height = 4.5, dpi = 130); print(p1)
+# гистограммы в обычных единицах; верхний 1% по доходу и сотрудникам не показан (там самые длинные хвосты)
+graphics.off()   # чистое окно графиков, чтобы первым не появлялся пустой лист
+q99 <- function(x) unname(quantile(x, .99, na.rm = TRUE))
+lab <- scales::label_number(big.mark = " ", decimal.mark = ",")
+cut_inc <- q99(d$rev_per_emp); cut_emp <- q99(d$employees)
+
+h1 <- ggplot(filter(d, rev_per_emp <= cut_inc), aes(rev_per_emp / 1e6, fill = sector)) +
+  geom_histogram(bins = 40, alpha = .6, position = "identity") +
+  scale_x_continuous(labels = lab) + scale_y_continuous(labels = lab) +
+  labs(x = "млн руб. на работника в год", y = "число фирм", fill = NULL, title = "Доход на работника",
+       subtitle = sprintf("без верхнего 1%% (больше %.1f млн руб.)", cut_inc / 1e6)) +
+  theme_minimal(base_size = 11) + theme(legend.position = "top")
+h2 <- ggplot(filter(d, employees <= cut_emp), aes(employees, fill = sector)) +
+  geom_histogram(breaks = seq(0.5, ceiling(cut_emp) + 0.5, by = 1), alpha = .6, position = "identity") +
+  scale_x_continuous(labels = lab) + scale_y_continuous(labels = lab) +
+  labs(x = "сотрудников в фирме", y = "число фирм", title = "Число сотрудников",
+       subtitle = sprintf("без верхнего 1%% (больше %.0f чел.)", cut_emp)) +
+  theme_minimal(base_size = 11) + theme(legend.position = "none")
+h3 <- ggplot(mutate(d, size_class = cut(n_firms_settl, breaks = c(0, 500, 2000, 10000, 50000, Inf),
+                                        labels = c("до 500", "500–2 000", "2 000–10 000", "10 000–50 000", "больше 50 000"))),
+             aes(size_class, fill = sector)) +
+  geom_bar(position = "dodge", alpha = .85) +
+  scale_y_continuous(labels = lab) +
+  labs(x = "фирм, зарегистрированных в пункте", y = "число фирм в выборке", title = "Размер населённого пункта") +
+  theme_minimal(base_size = 11) + theme(legend.position = "none", axis.text.x = element_text(angle = 20, hjust = 1))
+p1 <- gridExtra::arrangeGrob(h1, h2, h3, ncol = 3)
+ggsave("01_distributions_me.png", p1, width = 14, height = 5, dpi = 130)
+grid::grid.draw(p1)
 
 # ---------- 3. корреляции ----------
 clean <- d |> filter(!anomaly)
@@ -140,10 +160,20 @@ prof <- clean |> group_by(cluster) |>
 print(as.data.frame(prof))
 write.csv(prof, "cluster_profile_me.csv", row.names = FALSE, fileEncoding = "UTF-8")
 
-pc1 <- ggplot(clean, aes(ln_emp, ln_rpe, colour = cluster)) + geom_jitter(width = .08, size = 1) +
-  labs(x = "ln сотрудники", y = "ln доход на работника", title = "Кластеры (k-means)") + theme_minimal()
-pc2 <- ggplot(clean, aes(ln_firms, ln_rpe, colour = cluster)) + geom_point(size = 1) +
-  labs(x = "ln размер пункта (число фирм)", y = "ln доход на работника", title = "Кластеры и размер пункта") + theme_minimal()
+# кластеры считались на логарифмах, но на графиках показаны обычные единицы
+cl <- clean |> filter(employees <= cut_emp, rev_per_emp <= cut_inc)
+cl_note <- "без верхнего 1% по доходу и по сотрудникам"
+pc1 <- ggplot(cl, aes(employees, rev_per_emp / 1e6, colour = cluster)) +
+  geom_jitter(width = .25, height = 0, size = 1, alpha = .7) +
+  scale_x_continuous(labels = lab) + scale_y_continuous(labels = lab) +
+  labs(x = "сотрудников в фирме", y = "доход на работника, млн руб.", title = "Кластеры (k-means)", subtitle = cl_note) +
+  theme_minimal()
+pc2 <- ggplot(cl, aes(n_firms_settl / 1000, rev_per_emp / 1e6, colour = cluster)) +
+  geom_point(size = 1, alpha = .7) +
+  scale_x_continuous(labels = lab) + scale_y_continuous(labels = lab) +
+  labs(x = "фирм в населённом пункте, тыс.", y = "доход на работника, млн руб.",
+       title = "Кластеры и размер пункта", subtitle = cl_note) +
+  theme_minimal()
 g4 <- gridExtra::arrangeGrob(pc1, pc2, ncol = 2)
 ggsave("03_clusters_me.png", g4, width = 13, height = 5.5, dpi = 130)
 grid::grid.newpage(); grid::grid.draw(g4)
@@ -151,16 +181,36 @@ grid::grid.newpage(); grid::grid.draw(g4)
 # ---------- 5. карты ----------
 agg <- d |> group_by(oktmo, settlement, sector) |>
   summarise(lat = first(lat), lon = first(lon), n = n(), rpe = median(rev_per_emp), .groups = "drop")
-p5 <- ggplot(agg, aes(lon, lat, colour = log10(rpe), size = n)) + geom_point(alpha = .8) +
-  scale_colour_viridis_c(name = "log10 медианного\nдохода на работника") +
-  scale_size_continuous(range = c(1.5, 8), name = "фирм") +
-  facet_wrap(~sector) + coord_quickmap() + theme_minimal(base_size = 11)
-ggsave("04_map_income_me.png", p5, width = 15, height = 6.5, dpi = 130); print(p5)
+# карта края: точки пунктов поверх подложки (нужен интернет для загрузки плиток карты;
+# если загрузить не удалось, рисуется карта без подложки)
+agg_sf <- sf::st_as_sf(agg, coords = c("lon", "lat"), crs = 4326, remove = FALSE)
+# граница Краснодарского края (GADM) лежит рядом со скриптом; без неё карта рисуется без контура
+border_file <- Filter(file.exists, c("krasnodar_border.geojson", "data/krasnodar_border.geojson", "../data/krasnodar_border.geojson"))
+border <- if (length(border_file)) sf::st_read(border_file[1], quiet = TRUE) else NULL
+make_map <- function(tiles) {
+  ggplot(agg_sf) +
+    (if (tiles) ggspatial::annotation_map_tile(type = "cartolight", zoom = 8, progress = "none")) +
+    (if (!is.null(border)) geom_sf(data = border, fill = if (tiles) NA else "#eef1f4", colour = "#3d4651", linewidth = .6)) +
+    geom_sf(aes(colour = rpe / 1e6, size = n), alpha = .85) +
+    scale_colour_viridis_c(name = "Медианный доход\nна работника, млн руб.", trans = "log10",
+                           breaks = c(.1, .3, 1, 3, 10, 30), labels = c("0,1", "0,3", "1", "3", "10", "30")) +
+    scale_size_continuous(range = c(1.5, 8), name = "фирм в выборке") +
+    coord_sf(xlim = c(36.5, 42.0), ylim = c(43.3, 47.0), expand = FALSE) +
+    facet_wrap(~sector) + theme_minimal(base_size = 11)
+}
+p5 <- make_map(TRUE)
+ok <- tryCatch({ ggsave("04_map_income_me.png", p5, width = 15, height = 6.5, dpi = 130); print(p5); TRUE },
+               error = function(e) { message("Подложка карты недоступна (", conditionMessage(e), "), рисую без неё"); FALSE })
+if (!ok) { p5 <- make_map(FALSE); ggsave("04_map_income_me.png", p5, width = 15, height = 6.5, dpi = 130); print(p5) }
 
 pal <- colorFactor("Set1", clean$cluster)
+add_border <- function(map) {
+  if (is.null(border)) map else addPolygons(map, data = border, fill = FALSE, color = "#333333", weight = 2)
+}
 m <- leaflet() |>
   addProviderTiles(providers$CartoDB.Positron) |>
   setView(KRD[["lon"]], KRD[["lat"]], zoom = 7) |>
+  add_border() |>
   addCircleMarkers(data = clean, lng = ~lon, lat = ~lat, radius = 3, color = ~pal(cluster), weight = .5, fillOpacity = .8,
                    label = ~sprintf("%s (%s): доход/раб. %.2f млн; сотрудники %.0f; кластер %s",
                                     settlement, sector, rev_per_emp / 1e6, employees, cluster)) |>
