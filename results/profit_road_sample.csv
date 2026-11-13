@@ -1,0 +1,6 @@
+"step","firms","settlements","note"
+"prepared_table",833,144,"data/krasnodar_2023_regression.csv"
+"excluded_zero_population",1,1,"Чушка"
+"excluded_missing_values",0,0,""
+"common_sample",832,143,"одна и та же для прямых и дорожных моделей"
+"trimmed_sample",814,143,"profit_per_worker в [-2.565; 9.203] млн руб. (1-й и 99-й процентили)"
