@@ -1,0 +1,7 @@
+"step","firms","settlements","note"
+"common_sample",832,143,"832 фирмы, как в regression_profit_road.R"
+"excluded_in_krasnodar",238,1,""
+"excluded_in_sochi",175,1,""
+"excluded_in_novorossiysk",30,1,""
+"noncenter_sample",389,140,"фирмы, зарегистрированные не в Краснодаре, Сочи и Новороссийске"
+"noncenter_trimmed",381,140,"profit_per_worker в [-2.437; 7.739] млн руб. (1-й и 99-й процентили выборки вне центров)"
